@@ -112,6 +112,43 @@ func TestPeek(t *testing.T) {
 	}
 }
 
+func TestLIFO(t *testing.T) {
+	s := NewStack()
+	value1 := 1
+	value2 := "test"
+	value3 := true
+	value4 := [3]int{1, 2, 3}
+
+	s.Push(value1)
+	s.Push(value2)
+	s.Push(value3)
+	s.Push(value4)
+
+	actual1, _ := s.Pop()
+
+	if value4 != actual1 {
+		t.Errorf("Test failed, expected: '%s', got:  '%s'", value4, actual1)
+	}
+
+	actual2, _ := s.Pop()
+
+	if value3 != actual2 {
+		t.Errorf("Test failed, expected: '%s', got:  '%s'", value3, actual2)
+	}
+
+	actual3, _ := s.Pop()
+
+	if value2 != actual3 {
+		t.Errorf("Test failed, expected: '%s', got:  '%s'", value2, actual3)
+	}
+
+	actual4, _ := s.Pop()
+
+	if value1 != actual4 {
+		t.Errorf("Test failed, expected: '%s', got:  '%s'", value1, actual4)
+	}
+}
+
 func TestPushPopThreadSafety(t *testing.T) {
 	s := NewStack()
 	c := make(chan bool)
