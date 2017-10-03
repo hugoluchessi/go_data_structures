@@ -96,7 +96,7 @@ func TestPeekEmptyStack(t *testing.T) {
 	}
 }
 
-func TestPeek(t *testing.T) {
+func TestStackPeek(t *testing.T) {
 	s := NewStack()
 	expected := "Test"
 

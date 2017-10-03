@@ -5,8 +5,6 @@ import (
 	"sync"
 )
 
-const arraySizeIncrement int = 1024
-
 type Stack struct {
 	lock    sync.Mutex
 	length  int
@@ -14,7 +12,7 @@ type Stack struct {
 }
 
 func NewStack() *Stack {
-	return &Stack{sync.Mutex{}, 0, make([]interface{}, arraySizeIncrement)}
+	return &Stack{sync.Mutex{}, 0, make([]interface{}, 128)}
 }
 
 func (s *Stack) Push(value interface{}) error {
@@ -51,7 +49,7 @@ func (s *Stack) Peek() (interface{}, error) {
 }
 
 func (s *Stack) redimStorage() {
-	auxStorage := make([]interface{}, s.length+arraySizeIncrement)
+	auxStorage := make([]interface{}, s.length*2)
 	copy(s.storage, auxStorage)
 	s.storage = auxStorage
 }
