@@ -19,14 +19,14 @@ type HashTableItem struct {
 }
 
 func NewHashTable() *HashTable {
-	return &HashTable{sync.RWMutex{}, make([]interface{}, 128)}
+	return &HashTable{sync.RWMutex{}, make([]interface{}, 64)}
 }
 
-func (l *HashTable) GetValue(key interface{}) (interface{}, error) {
-	l.lock.RLock()
-	defer l.lock.RUnlock()
+func (h *HashTable) GetValue(key interface{}) (interface{}, error) {
+	h.lock.RLock()
+	defer h.lock.RUnlock()
 
-	item, err := l.getHashTableItem(key)
+	item, err := h.getHashTableItem(key)
 
 	if err != nil {
 		return nil, err
@@ -39,14 +39,95 @@ func (l *HashTable) GetValue(key interface{}) (interface{}, error) {
 	return nil, nil
 }
 
-func (l *HashTable) getHashTableItem(key interface{}) (*HashTableItem, error) {
-	index, err := l.getHashIndex(key)
+func (h *HashTable) SetValue(key interface{}, value interface{}) error {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+
+	item, err := h.getHashTableItem(key)
+
+	if err != nil {
+		return err
+	}
+
+	if item != nil {
+		item.value = value
+		return nil
+	}
+
+	index, err := h.getHashIndex(key)
+
+	if err != nil {
+		return err
+	}
+
+	if h.storage[index] != nil {
+		item = h.storage[index].(*HashTableItem)
+	}
+
+	h.storage[index] = &HashTableItem{key, value, item}
+
+	return nil
+}
+
+func (h *HashTable) RemoveKey(key interface{}) error {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+
+	index, err := h.getHashIndex(key)
+
+	if err != nil {
+		return err
+	}
+
+	if h.storage[index] == nil {
+		return nil
+	}
+
+	item := h.storage[index].(*HashTableItem)
+
+	if item.key == key {
+		if item.next != nil {
+			h.storage[index] = item.next
+		} else {
+			h.storage[index] = nil
+		}
+
+		return nil
+	}
+
+	for {
+		previousItem := item
+		item = item.next
+
+		if item.key == key {
+			if item.next != nil {
+				previousItem.next = item.next
+			} else {
+				previousItem.next = nil
+			}
+
+			return nil
+		}
+
+		if item.next == nil {
+			return nil
+		}
+	}
+}
+
+func (h *HashTable) getHashTableItem(key interface{}) (*HashTableItem, error) {
+	var item *HashTableItem
+	index, err := h.getHashIndex(key)
 
 	if err != nil {
 		return nil, err
 	}
 
-	item := l.storage[index].(*HashTableItem)
+	if h.storage[index] == nil {
+		return nil, nil
+	}
+
+	item = h.storage[index].(*HashTableItem)
 
 	for {
 		if item.key == key {
@@ -54,23 +135,21 @@ func (l *HashTable) getHashTableItem(key interface{}) (*HashTableItem, error) {
 		}
 
 		if item.next == nil {
-			break
+			return nil, nil
 		}
 
 		item = item.next
 	}
-
-	return nil, nil
 }
 
-func (l *HashTable) getHashIndex(key interface{}) (uint32, error) {
+func (h *HashTable) getHashIndex(key interface{}) (int, error) {
 	code, err := hashCode(key)
 
 	if err != nil {
 		return 0, err
 	}
 
-	return code / uint32(len(l.storage)), nil
+	return int(code) % len(h.storage), nil
 }
 
 func hashCode(key interface{}) (uint32, error) {

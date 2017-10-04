@@ -66,8 +66,8 @@ func TestEnqueueFullQueueStorageAfterDequeues(t *testing.T) {
 		t.Errorf("Test failed, expect length to be '%s', got: '%s'", expected, q.length)
 	}
 
-	if value != "test" {
-		t.Errorf("Test failed, expect value to be '%s', got: '%s'", "test", value)
+	if value != 64 {
+		t.Errorf("Test failed, expect value to be '%s', got: '%s'", 64, value)
 	}
 }
 
@@ -91,8 +91,8 @@ func TestDequeueBackDoFirstIndex(t *testing.T) {
 		t.Errorf("Test failed, expect length to be '%s', got: '%s'", expected, q.length)
 	}
 
-	if value != "test" {
-		t.Errorf("Test failed, expect value to be '%s', got: '%s'", "test", value)
+	if value != 0 {
+		t.Errorf("Test failed, expect value to be '%s', got: '%s'", 0, value)
 	}
 }
 
@@ -176,26 +176,49 @@ func TestFIFO(t *testing.T) {
 
 	actual1, _ := q.Dequeue()
 
-	if value4 != actual1 {
-		t.Errorf("Test failed, expected: '%s', got:  '%s'", value4, actual1)
+	if value1 != actual1 {
+		t.Errorf("Test failed, expected: '%s', got:  '%s'", value1, actual1)
 	}
 
 	actual2, _ := q.Dequeue()
 
-	if value3 != actual2 {
-		t.Errorf("Test failed, expected: '%s', got:  '%s'", value3, actual2)
+	if value2 != actual2 {
+		t.Errorf("Test failed, expected: '%s', got:  '%s'", value2, actual2)
 	}
 
 	actual3, _ := q.Dequeue()
 
-	if value2 != actual3 {
-		t.Errorf("Test failed, expected: '%s', got:  '%s'", value2, actual3)
+	if value3 != actual3 {
+		t.Errorf("Test failed, expected: '%s', got:  '%s'", value3, actual3)
 	}
 
 	actual4, _ := q.Dequeue()
 
-	if value1 != actual4 {
-		t.Errorf("Test failed, expected: '%s', got:  '%s'", value1, actual4)
+	if value4 != actual4 {
+		t.Errorf("Test failed, expected: '%s', got:  '%s'", value4, actual4)
+	}
+}
+
+func TestFIFOWithRedimmedQueue(t *testing.T) {
+	q := NewQueue()
+
+	length := 900
+
+	for i := 0; i < length; i++ {
+		q.Enqueue(i)
+		q.Dequeue()
+	}
+
+	for i := 0; i < length; i++ {
+		q.Enqueue(i)
+	}
+
+	for i := 0; i < length; i++ {
+		value, _ := q.Dequeue()
+
+		if value != i {
+			t.Errorf("Test failed, expected: '%s', got:  '%s'", i, value)
+		}
 	}
 }
 

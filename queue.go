@@ -44,6 +44,8 @@ func (q *Queue) Dequeue() (interface{}, error) {
 		return 0, errors.New("Queue is empty")
 	}
 
+	item := q.storage[q.i]
+
 	q.length--
 	q.i++
 
@@ -51,7 +53,7 @@ func (q *Queue) Dequeue() (interface{}, error) {
 		q.i = 0
 	}
 
-	return q.storage[q.length], nil
+	return item, nil
 }
 
 func (q *Queue) Peek() (interface{}, error) {
@@ -64,6 +66,7 @@ func (q *Queue) Peek() (interface{}, error) {
 
 func (q *Queue) redimStorage() {
 	auxStorage := make([]interface{}, q.length*2)
+	priorLength := q.length
 	auxIndex := 0
 
 	for auxI := q.i; auxIndex < q.length; auxI++ {
@@ -77,5 +80,7 @@ func (q *Queue) redimStorage() {
 		auxIndex++
 	}
 
+	q.i = 0
+	q.e = priorLength
 	q.storage = auxStorage
 }
