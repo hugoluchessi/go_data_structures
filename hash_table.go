@@ -10,6 +10,7 @@ import (
 type HashTable struct {
 	lock    sync.RWMutex
 	storage []interface{}
+	length  int
 }
 
 type HashTableItem struct {
@@ -19,7 +20,7 @@ type HashTableItem struct {
 }
 
 func NewHashTable() *HashTable {
-	return &HashTable{sync.RWMutex{}, make([]interface{}, 64)}
+	return &HashTable{sync.RWMutex{}, make([]interface{}, 64), 0}
 }
 
 func (h *HashTable) GetValue(key interface{}) (interface{}, error) {
@@ -43,28 +44,21 @@ func (h *HashTable) SetValue(key interface{}, value interface{}) error {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
-	item, err := h.getHashTableItem(key)
+	err := h.setValueUnsafe(key, value)
 
 	if err != nil {
 		return err
 	}
 
-	if item != nil {
-		item.value = value
-		return nil
+	h.length++
+
+	if h.length > len(h.storage)*2 {
+		err = h.redistributeValues()
+
+		if err != nil {
+			return err
+		}
 	}
-
-	index, err := h.getHashIndex(key)
-
-	if err != nil {
-		return err
-	}
-
-	if h.storage[index] != nil {
-		item = h.storage[index].(*HashTableItem)
-	}
-
-	h.storage[index] = &HashTableItem{key, value, item}
 
 	return nil
 }
@@ -115,6 +109,33 @@ func (h *HashTable) RemoveKey(key interface{}) error {
 	}
 }
 
+func (h *HashTable) setValueUnsafe(key interface{}, value interface{}) error {
+	item, err := h.getHashTableItem(key)
+
+	if err != nil {
+		return err
+	}
+
+	if item != nil {
+		item.value = value
+		return nil
+	}
+
+	index, err := h.getHashIndex(key)
+
+	if err != nil {
+		return err
+	}
+
+	if h.storage[index] != nil {
+		item = h.storage[index].(*HashTableItem)
+	}
+
+	h.storage[index] = &HashTableItem{key, value, item}
+
+	return nil
+}
+
 func (h *HashTable) getHashTableItem(key interface{}) (*HashTableItem, error) {
 	var item *HashTableItem
 	index, err := h.getHashIndex(key)
@@ -150,6 +171,34 @@ func (h *HashTable) getHashIndex(key interface{}) (int, error) {
 	}
 
 	return int(code) % len(h.storage), nil
+}
+
+func (h *HashTable) redistributeValues() error {
+	currentLength := len(h.storage)
+	currentStorage := make([]interface{}, currentLength)
+	copy(currentStorage, h.storage)
+
+	h.storage = make([]interface{}, h.length*2)
+
+	for i := 0; i < currentLength; i++ {
+		if currentStorage[i] == nil {
+			continue
+		}
+
+		item := currentStorage[i].(*HashTableItem)
+
+		for item != nil {
+			err := h.setValueUnsafe(item.key, item.value)
+
+			if err != nil {
+				return err
+			}
+
+			item = item.next
+		}
+	}
+
+	return nil
 }
 
 func hashCode(key interface{}) (uint32, error) {

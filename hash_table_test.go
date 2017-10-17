@@ -103,11 +103,11 @@ func TestSetExistingValueStringKeyStringValue(t *testing.T) {
 func TestSetMoreValuesThanBuckets(t *testing.T) {
 	h := NewHashTable()
 
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 5000; i++ {
 		_ = h.SetValue(i, i)
 	}
 
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 5000; i++ {
 		value, _ := h.GetValue(i)
 
 		if value.(int) != i {
